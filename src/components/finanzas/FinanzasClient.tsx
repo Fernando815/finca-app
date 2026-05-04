@@ -219,7 +219,7 @@ export function FinanzasClient({ finca, animales }: Props) {
               <PieChart>
                 <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
                      dataKey="value" nameKey="name"
-                     label={({ name, percent }: {name:string;percent:number}) => `${name} ${(percent*100).toFixed(0)}%`}
+                     label={({ name, percent }: {name?:string;percent?:number}) => `${name ?? ""} ${((percent??0)*100).toFixed(0)}%`}
                      labelLine={false}
                 >
                   {pieData.map((_,i) => (
