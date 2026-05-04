@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FincaApp</string>
+    <string name="title_activity_main">FincaApp</string>
+    <string name="package_name">cr.fincaapp.app</string>
+    <string name="custom_url_scheme">cr.fincaapp.app</string>
+</resources>

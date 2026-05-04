@@ -1,0 +1,604 @@
+// ============================================================
+// FincaApp — Schema PostgreSQL (producción) / SQLite (desarrollo)
+// Strings usados en lugar de enums para mayor flexibilidad
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// AUTENTICACIÓN (NextAuth.js)
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("PRODUCTOR") // ADMIN | PRODUCTOR
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  fincas         Finca[]
+  suscripcion    Suscripcion?
+  notificaciones Notificacion[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================
+// FINCA
+// ============================================================
+
+model Finca {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String?
+  provincia   String?
+  canton      String?
+  distrito    String?
+  areaTotal   Float?
+  enfoque     String   @default("MIXTA") // ENGORDE | CRIA | LECHE | AGRICULTURA | MIXTA
+  activa      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  animales        Animal[]
+  lotes           Lote[]
+  potreros        Potrero[]
+  parcelas        Parcela[]
+  tareas          Tarea[]
+  croquis         Croquis?
+  peones          Peon[]
+  inventario      InventarioItem[]
+  registrosLeche  RegistroLeche[]
+  registrosPeso   RegistroPeso[]
+  transacciones   Transaccion[]
+
+  @@map("fincas")
+}
+
+// ============================================================
+// ANIMALES
+// ============================================================
+
+model Animal {
+  id              String    @id @default(cuid())
+  codigo          String
+  nombre          String?
+  tipo            String    @default("VACA") // VACA|TORO|TERNERO|TERNERA|CABALLO|YEGUA|OVEJA|CABRA|CERDO|OTRO
+  raza            String?
+  sexo            String    @default("HEMBRA") // MACHO | HEMBRA
+  edadMeses       Int?
+  fechaNacimiento DateTime?
+  pesoEstimado    Float?
+  color           String?
+  estado          String    @default("ACTIVO") // ACTIVO|VENDIDO|ENFERMO|MUERTO|EN_TRATAMIENTO|PRENADA|EN_CELO|SECO
+  enfoque         String?   // LECHE | CARNE | CRIA | DOBLE_PROPOSITO
+  madreId         String?
+  padreId         String?
+  notas           String?
+  foto            String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  fincaId String
+  finca   Finca  @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+  loteId  String?
+  lote    Lote?  @relation(fields: [loteId], references: [id])
+  madre   Animal? @relation("MadreHijo", fields: [madreId], references: [id])
+  hijos   Animal[] @relation("MadreHijo")
+  padre   Animal? @relation("PadreHijo", fields: [padreId], references: [id])
+  hijosDelPadre Animal[] @relation("PadreHijo")
+
+  historialMedico HistorialMedico[]
+  celos           Celo[]
+  partos          Parto[]
+  registrosLeche  RegistroLeche[]
+  registrosPeso   RegistroPeso[]
+  transacciones   Transaccion[]
+
+  @@unique([fincaId, codigo])
+  @@map("animales")
+}
+
+// ============================================================
+// PEONES / EMPLEADOS
+// ============================================================
+
+model Peon {
+  id                String   @id @default(cuid())
+  nombre            String
+  cedula            String?
+  cargo             String   @default("PEON")    // PEON|ENCARGADO|VAQUERO|OPERADOR|OTRO
+  telefono          String?
+  salario           Float?
+  fechaContratacion DateTime @default(now())
+  estado            String   @default("ACTIVO")  // ACTIVO|INACTIVO|VACACIONES|RETIRADO
+  notas             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  fincaId String
+  finca   Finca  @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+  tareas  Tarea[]
+
+  @@map("peones")
+}
+
+// ============================================================
+// LOTES Y POTREROS
+// ============================================================
+
+model Lote {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String?
+  tipo        String   @default("MIXTO") // ENGORDE | CRIA | LECHE | MIXTO
+  color       String?  @default("#4CAF50")
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fincaId String
+  finca   Finca  @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+
+  animales    Animal[]
+  movimientos MovimientoPotrero[]
+  registrosLeche RegistroLeche[]
+
+  @@map("lotes")
+}
+
+model Potrero {
+  id                  String   @id @default(cuid())
+  nombre              String
+  numero              Int?
+  areHectareas        Float?
+  capacidadAnimales   Int?
+  tipoUso             String   @default("MIXTO") // ENGORDE | CRIA | LECHE | MIXTO
+  disponible          Boolean  @default(true)
+  diasDescansoMinimo  Int      @default(21)
+  diasOcupacionMaximo Int      @default(7)
+  estadoPasto         String   @default("BUENO") // EXCELENTE | BUENO | REGULAR | MALO | DESCANSANDO
+  notas               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  fincaId String
+  finca   Finca  @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+
+  movimientos MovimientoPotrero[]
+
+  @@map("potreros")
+}
+
+model MovimientoPotrero {
+  id            String    @id @default(cuid())
+  fechaEntrada  DateTime  @default(now())
+  fechaSalida   DateTime?
+  diasEnPotrero Int?
+  motivo        String?
+  notas         String?
+  createdAt     DateTime  @default(now())
+
+  loteId    String
+  lote      Lote    @relation(fields: [loteId], references: [id], onDelete: Cascade)
+  potreroId String
+  potrero   Potrero @relation(fields: [potreroId], references: [id], onDelete: Cascade)
+
+  @@map("movimientos_potrero")
+}
+
+// ============================================================
+// HISTORIAL MÉDICO
+// ============================================================
+
+model HistorialMedico {
+  id                String    @id @default(cuid())
+  fecha             DateTime  @default(now())
+  tipo              String    // VACUNA|VITAMINA|DESPARASITANTE|MEDICAMENTO|CIRUGIA|DIAGNOSTICO|OTRO
+  producto          String
+  dosis             String?
+  viaAdministracion String?
+  veterinario       String?
+  costo             Float?
+  proximaFecha      DateTime?
+  notas             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  animalId String
+  animal   Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@map("historial_medico")
+}
+
+model Celo {
+  id           String   @id @default(cuid())
+  fecha        DateTime
+  intensidad   String?
+  monta        Boolean  @default(false)
+  toro         String?
+  inseminacion Boolean  @default(false)
+  resultado    String?
+  notas        String?
+  createdAt    DateTime @default(now())
+
+  animalId String
+  animal   Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@map("celos")
+}
+
+model Parto {
+  id             String    @id @default(cuid())
+  fecha          DateTime
+  tipoParto      String?
+  crias          Int       @default(1)
+  sexoCria       String?
+  pesoAlNacer    Float?
+  estadoCria     String?
+  complicaciones String?
+  proximoParto   DateTime?
+  notas          String?
+  createdAt      DateTime  @default(now())
+
+  animalId String
+  animal   Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@map("partos")
+}
+
+// ============================================================
+// CULTIVOS Y PARCELAS
+// ============================================================
+
+model Parcela {
+  id            String   @id @default(cuid())
+  nombre        String
+  numero        Int?
+  areaHectareas Float?
+  tipo          String   @default("CULTIVO") // CULTIVO|PASTO|BOSQUE|INFRAESTRUCTURA|OTRO
+  notas         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  fincaId  String
+  finca    Finca     @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+  cultivos Cultivo[]
+
+  @@map("parcelas")
+}
+
+model Cultivo {
+  id            String    @id @default(cuid())
+  tipo          String    // CAFE|PLATANO|YUCA|MAIZ|PASTO|CANA|FRIJOL|TOMATE|PIPA|OTRO
+  variedad      String?
+  fechaSiembra  DateTime?
+  fechaCosecha  DateTime?
+  etapa         String    @default("PREPARACION") // PREPARACION|SIEMBRA|GERMINACION|CRECIMIENTO|FLORACION|FRUCTIFICACION|COSECHA|POST_COSECHA
+  areaHectareas Float?
+  estado        String    @default("ACTIVO") // ACTIVO|COSECHADO|PERDIDO|BARBECHO
+  notas         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  parcelaId String
+  parcela   Parcela       @relation(fields: [parcelaId], references: [id], onDelete: Cascade)
+  labores   LaborAgricola[]
+
+  @@map("cultivos")
+}
+
+model LaborAgricola {
+  id        String   @id @default(cuid())
+  fecha     DateTime @default(now())
+  tipo      String   // FERTILIZACION|LIMPIEZA|PODA|FUMIGACION|COSECHA|RIEGO|CONTROL_PLAGAS|SIEMBRA|OTRO
+  producto  String?
+  cantidad  Float?
+  unidad    String?
+  costo     Float?
+  realizado Boolean  @default(false)
+  notas     String?
+  createdAt DateTime @default(now())
+
+  cultivoId String
+  cultivo   Cultivo @relation(fields: [cultivoId], references: [id], onDelete: Cascade)
+
+  @@map("labores_agricolas")
+}
+
+// ============================================================
+// TAREAS
+// ============================================================
+
+model Tarea {
+  id           String    @id @default(cuid())
+  titulo       String
+  descripcion  String?
+  tipo         String    @default("MANUAL")    // MANUAL | AUTOMATICA | RECURRENTE
+  prioridad    String    @default("MEDIA")     // BAJA | MEDIA | ALTA | URGENTE
+  estado       String    @default("PENDIENTE") // PENDIENTE | EN_PROCESO | COMPLETADA | VENCIDA | CANCELADA
+  fechaLimite  DateTime?
+  completadaEn DateTime?
+  recordatorio Boolean   @default(true)
+  frecuencia   String?   // DIARIA|SEMANAL|QUINCENAL|MENSUAL|TRIMESTRAL|ANUAL
+  categoria    String    @default("GENERAL")   // GENERAL|ANIMAL|POTRERO|CULTIVO|INFRAESTRUCTURA|VETERINARIA|ADMINISTRATIVA
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  fincaId String
+  finca   Finca  @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+  peonId  String?
+  peon    Peon?  @relation(fields: [peonId], references: [id])
+
+  @@map("tareas")
+}
+
+// ============================================================
+// NOTIFICACIONES
+// ============================================================
+
+model Notificacion {
+  id        String   @id @default(cuid())
+  titulo    String
+  mensaje   String
+  tipo      String   // TAREA|VACUNA|DESPARASITANTE|ROTACION|PARTO|CELO|SUSCRIPCION|SISTEMA
+  leida     Boolean  @default(false)
+  accion    String?
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notificaciones")
+}
+
+model PushToken {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  plataforma String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  @@map("push_tokens")
+}
+
+// ============================================================
+// CROQUIS
+// ============================================================
+
+model Croquis {
+  id        String   @id @default(cuid())
+  data      String   // JSON del canvas Konva serializado
+  thumbnail String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fincaId String  @unique
+  finca   Finca   @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+
+  @@map("croquis")
+}
+
+// ============================================================
+// SUSCRIPCIONES Y PAGOS
+// ============================================================
+
+model Suscripcion {
+  id               String    @id @default(cuid())
+  plan             String    @default("GRATUITO")  // GRATUITO | BASICO | PRO
+  estado           String    @default("ACTIVA")    // ACTIVA | VENCIDA | CANCELADA | PENDIENTE
+  fechaInicio      DateTime  @default(now())
+  fechaVencimiento DateTime?
+  stripeCustomerId String?   @unique
+  stripeSubId      String?   @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  userId String      @unique
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pagos  Pago[]
+
+  @@map("suscripciones")
+}
+
+model Pago {
+  id              String   @id @default(cuid())
+  monto           Float
+  moneda          String   @default("USD")
+  estado          String   // COMPLETADO | PENDIENTE | FALLIDO | REEMBOLSADO
+  stripePaymentId String?  @unique
+  descripcion     String?
+  fechaPago       DateTime @default(now())
+
+  suscripcionId String
+  suscripcion   Suscripcion @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+
+  @@map("pagos")
+}
+
+// ============================================================
+// INVENTARIO Y MANTENIMIENTO
+// ============================================================
+
+model InventarioItem {
+  id                  String   @id @default(cuid())
+  nombre              String
+  codigo              String?
+  categoria           String   // MAQUINARIA | HERRAMIENTA_ELECTRICA | HERRAMIENTA_MANUAL | INSUMO | EQUIPO_RIEGO | OTRO
+  marca               String?
+  modelo              String?
+  numeroSerie         String?
+  estado              String   @default("BUENO") // BUENO | REGULAR | MALO | EN_REPARACION | DADO_DE_BAJA
+  cantidad            Float    @default(1)
+  unidad              String   @default("unidad") // unidad | litros | kg | metros | galones
+  cantidadMinima      Float?   // alerta de stock bajo
+  ultimoMantenimiento DateTime?
+  proximoMantenimiento DateTime?
+  costoAdquisicion    Float?
+  notas               String?
+  foto                String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  fincaId       String
+  finca         Finca                @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+  mantenimientos MantenimientoRegistro[]
+
+  @@map("inventario_items")
+}
+
+model MantenimientoRegistro {
+  id          String   @id @default(cuid())
+  tipo        String   // PREVENTIVO | CORRECTIVO | CAMBIO_ACEITE | REVISION | LIMPIEZA | REPARACION | OTRO
+  descripcion String
+  fecha       DateTime @default(now())
+  costo       Float?
+  realizadoPor String?
+  proximaFecha DateTime?
+  notas       String?
+  createdAt   DateTime @default(now())
+
+  itemId String
+  item   InventarioItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("mantenimiento_registros")
+}
+
+// ============================================================
+// PRODUCCIÓN DE LECHE
+// ============================================================
+
+model RegistroLeche {
+  id                 String   @id @default(cuid())
+  fecha              DateTime @default(now())
+  litros             Float
+  animalesOrdenados  Int?     // Solo relevante para registros por lote
+  notas              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  fincaId  String
+  finca    Finca   @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+  animalId String?
+  animal   Animal? @relation(fields: [animalId], references: [id], onDelete: SetNull)
+  loteId   String?
+  lote     Lote?   @relation(fields: [loteId], references: [id], onDelete: SetNull)
+
+  @@unique([animalId, fecha], name: "unique_animal_fecha")
+  @@unique([loteId, fecha], name: "unique_lote_fecha")
+  @@index([fincaId, fecha])
+  @@index([animalId, fecha])
+  @@index([loteId, fecha])
+  @@map("registros_leche")
+}
+
+// ============================================================
+// PESO EN BÁSCULA
+// ============================================================
+
+model RegistroPeso {
+  id        String   @id @default(cuid())
+  fecha     DateTime @default(now())
+  pesoKg    Float
+  metodo    String   @default("BASCULA") // BASCULA | ESTIMADO | CINTA
+  notas     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  animalId String
+  animal   Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  fincaId  String
+  finca    Finca  @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+
+  @@unique([animalId, fecha], name: "unique_peso_animal_fecha")
+  @@index([animalId, fecha])
+  @@index([fincaId, fecha])
+  @@map("registros_peso")
+}
+
+// ============================================================
+// FINANZAS
+// ============================================================
+
+model Transaccion {
+  id          String   @id @default(cuid())
+  fecha       DateTime @default(now())
+  tipo        String   // INGRESO | EGRESO
+  categoria   String
+  // INGRESO: VENTA_ANIMAL | VENTA_LECHE | VENTA_CULTIVO | SUBSIDIO | OTRO_INGRESO
+  // EGRESO:  VETERINARIO | ALIMENTACION | SALARIO | MANTENIMIENTO | COMBUSTIBLE | INSUMOS | IMPUESTOS | OTRO_EGRESO
+  monto       Decimal  @default(0)
+  descripcion String
+  notas       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Snapshot del animal (en caso de que se elimine después)
+  animalCodigo String?
+  animalNombre String?
+
+  fincaId  String
+  finca    Finca   @relation(fields: [fincaId], references: [id], onDelete: Cascade)
+  animalId String?
+  animal   Animal? @relation(fields: [animalId], references: [id], onDelete: SetNull)
+
+  @@index([fincaId, fecha])
+  @@index([fincaId, tipo])
+  @@map("transacciones")
+}
