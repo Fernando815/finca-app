@@ -367,7 +367,7 @@ function ChartsSection({ charts }: { charts: any }) {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(v: unknown, name: unknown) => [v, name]}
+                  formatter={(v: any, name: any) => [String(v ?? ""), String(name)]}
                   contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 11 }}
                 />
                 <Legend
@@ -401,7 +401,7 @@ function ChartsSection({ charts }: { charts: any }) {
                   width={68}
                 />
                 <Tooltip
-                  formatter={(v: unknown) => [v, "tareas"]}
+                  formatter={(v: any) => [String(v ?? ""), "tareas"]}
                   contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 11 }}
                 />
                 <Bar dataKey="total" radius={[0, 6, 6, 0]}>
@@ -438,7 +438,7 @@ function ChartsSection({ charts }: { charts: any }) {
                   <XAxis dataKey="fechaLabel" tick={{ fontSize: 10 }} stroke="#d1d5db" />
                   <YAxis tick={{ fontSize: 10 }} stroke="#d1d5db" unit=" L" width={40} />
                   <Tooltip
-                    formatter={(v: unknown) => [`${(v as number).toFixed(1)} L`, "Litros"]}
+                    formatter={(v: any) => [`${Number(v ?? 0).toFixed(1)} L`, "Litros"]}
                     contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 11 }}
                   />
                   <Bar dataKey="litros" fill="#3b82f6" radius={[6, 6, 0, 0]} />
@@ -449,7 +449,7 @@ function ChartsSection({ charts }: { charts: any }) {
                   <XAxis dataKey="fechaLabel" tick={{ fontSize: 10 }} stroke="#d1d5db" />
                   <YAxis tick={{ fontSize: 10 }} stroke="#d1d5db" unit=" L" width={40} />
                   <Tooltip
-                    formatter={(v: unknown) => [`${(v as number).toFixed(1)} L`, "Litros"]}
+                    formatter={(v: any) => [`${Number(v ?? 0).toFixed(1)} L`, "Litros"]}
                     contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 11 }}
                   />
                   <Line
@@ -492,7 +492,7 @@ function ChartsSection({ charts }: { charts: any }) {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(v: unknown, name: unknown) => [v, name]}
+                  formatter={(v: any, name: any) => [String(v ?? ""), String(name)]}
                   contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 11 }}
                 />
                 <Legend

@@ -281,7 +281,7 @@ export function LecheClient({ finca, animales, lotes }: Props) {
                   <XAxis dataKey="fechaLabel" tick={{ fontSize: 11 }} stroke="#d1d5db" />
                   <YAxis tick={{ fontSize: 11 }} stroke="#d1d5db" unit=" L" width={45} />
                   <Tooltip
-                    formatter={(v: number) => [`${v.toFixed(1)} L`, "Litros"]}
+                    formatter={(v: any) => [`${Number(v ?? 0).toFixed(1)} L`, "Litros"]}
                     contentStyle={{ borderRadius: 12, border: "1px solid #e5e7eb", fontSize: 12 }}
                   />
                   <Line

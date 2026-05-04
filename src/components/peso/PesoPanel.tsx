@@ -237,7 +237,7 @@ export function PesoPanel({ animalId, animalNombre }: Props) {
                   <XAxis dataKey="fechaLabel" tick={{ fontSize: 10 }} stroke="#d1d5db" />
                   <YAxis tick={{ fontSize: 10 }} stroke="#d1d5db" unit=" kg" width={50} />
                   <Tooltip
-                    formatter={(v: number) => [`${v.toFixed(1)} kg`, "Peso"]}
+                    formatter={(v: any) => [`${Number(v ?? 0).toFixed(1)} kg`, "Peso"]}
                     contentStyle={{ borderRadius: 10, border: "1px solid #e5e7eb", fontSize: 11 }}
                   />
                   <Line

@@ -187,7 +187,7 @@ export function FinanzasClient({ finca, animales }: Props) {
               <BarChart data={resumen.ultimos6Meses} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                 <XAxis dataKey="mes" tickFormatter={fmtMes} tick={{ fontSize: 11 }} />
                 <YAxis tickFormatter={(v: number) => `₡${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11 }} width={55} />
-                <Tooltip formatter={(v: number) => fmtColones(v)} />
+                <Tooltip formatter={(v: any) => fmtColones(Number(v ?? 0))} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="ingresos" name="Ingresos" fill="#22c55e" radius={[4,4,0,0]} maxBarSize={30} />
                 <Bar dataKey="egresos"  name="Egresos"  fill="#ef4444" radius={[4,4,0,0]} maxBarSize={30} />
@@ -226,7 +226,7 @@ export function FinanzasClient({ finca, animales }: Props) {
                     <Cell key={i} fill={pieTab==="INGRESO" ? COLORS_INGRESOS[i%COLORS_INGRESOS.length] : COLORS_EGRESOS[i%COLORS_EGRESOS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number) => fmtColones(v)} />
+                <Tooltip formatter={(v: any) => fmtColones(Number(v ?? 0))} />
               </PieChart>
             </ResponsiveContainer>
           )}
