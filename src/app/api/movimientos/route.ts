@@ -45,9 +45,12 @@ export async function POST(req: NextRequest) {
         where: { id: mov.id },
         data: { fechaSalida, diasEnPotrero },
       });
-      // Marcar cada potrero anterior como disponible
+      // Poner potrero anterior en estado DESCANSANDO (no bloqueado, solo alerta visual)
       if (mov.potreroId !== potreroId) {
-        await prisma.potrero.update({ where: { id: mov.potreroId }, data: { disponible: true } });
+        await prisma.potrero.update({
+          where: { id: mov.potreroId },
+          data: { estadoPasto: "DESCANSANDO", disponible: true },
+        });
       }
     }
   }

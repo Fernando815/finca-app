@@ -78,13 +78,16 @@ function PotreroCard({ p, fincaId, onMover }: { p: any; fincaId: string; onMover
     BUENO:     "bg-lime-100 text-lime-800",
     REGULAR:   "bg-yellow-100 text-yellow-800",
     MALO:      "bg-red-100 text-red-800",
-    DESCANSANDO:"bg-blue-100 text-blue-800",
+    DESCANSANDO:"bg-amber-100 text-amber-800 border border-amber-300",
   };
+
+  const enDescanso = p.estadoPasto === "DESCANSANDO";
 
   return (
     <div className={cn(
       "bg-white rounded-2xl border shadow-sm transition-all hover:shadow-md",
-      necesita ? "border-orange-300 bg-orange-50" : "border-gray-100"
+      necesita      ? "border-orange-300 bg-orange-50" :
+      enDescanso    ? "border-amber-200 bg-amber-50/40" : "border-gray-100"
     )}>
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
@@ -107,8 +110,7 @@ function PotreroCard({ p, fincaId, onMover }: { p: any; fincaId: string; onMover
           </div>
         )}
 
-        {mov ? (
-          <div className="bg-green-50 rounded-xl p-3 mb-3">
+        {mov ? (          <div className="bg-green-50 rounded-xl p-3 mb-3">
             <div className="flex items-center justify-between mb-1">
               <p className="text-xs font-medium text-green-700">🌿 Lote actual</p>
               <Button variant="ghost" size="sm" className="h-6 px-1 text-xs text-green-600"
@@ -146,8 +148,12 @@ function PotreroCard({ p, fincaId, onMover }: { p: any; fincaId: string; onMover
             )}
           </div>
         ) : (
-          <div className="bg-blue-50 rounded-xl p-3 mb-3 text-center">
-            <p className="text-xs text-blue-600">✅ Disponible · Descansando</p>
+          <div className={cn("rounded-xl p-3 mb-3 text-center", enDescanso ? "bg-amber-50 border border-amber-200" : "bg-blue-50")}>
+            {enDescanso ? (
+              <p className="text-xs text-amber-700 font-medium">🌿 En descanso · Recuperando pasto</p>
+            ) : (
+              <p className="text-xs text-blue-600">✅ Disponible · Listo para recibir lote</p>
+            )}
           </div>
         )}
 
