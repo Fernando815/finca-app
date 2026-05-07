@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { ArrowLeft, MapPin, Beef, Sprout, CheckSquare, Users, Milk, Package } from "lucide-react";
+import { ArrowLeft, MapPin, Beef, CheckSquare, Users, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
@@ -27,7 +27,6 @@ export default async function AdminUsuarioPage({ params }: { params: { userId: s
               tareas: true,
               peones: true,
               inventario: true,
-              cultivos: true,
             },
           },
         },
@@ -125,12 +124,11 @@ export default async function AdminUsuarioPage({ params }: { params: { userId: s
               </div>
 
               {/* Conteos */}
-              <div className="grid grid-cols-3 md:grid-cols-6 divide-x divide-stone-50">
+              <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-stone-50">
                 {[
                   { label: "Animales", value: f._count.animales,  icon: Beef,        alert: f.animalesEnfermos > 0, alertMsg: `${f.animalesEnfermos} enfermos` },
                   { label: "Potreros", value: f._count.potreros,  icon: MapPin,      alert: false },
                   { label: "Lotes",    value: f._count.lotes,     icon: Users,       alert: false },
-                  { label: "Cultivos", value: f._count.cultivos,  icon: Sprout,      alert: false },
                   { label: "Tareas",   value: f._count.tareas,    icon: CheckSquare, alert: f.tareasVencidas > 0, alertMsg: `${f.tareasVencidas} vencidas` },
                   { label: "Peones",   value: f._count.peones,    icon: Users,       alert: false },
                 ].map(c => (
