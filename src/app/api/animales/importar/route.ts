@@ -48,15 +48,15 @@ export async function POST(req: NextRequest) {
   const sheetName = workbook.SheetNames[0];
   const sheet     = workbook.Sheets[sheetName];
 
-  // Leer desde fila 4 (fila 3 = encabezados, fila 4 = ejemplo que el usuario puede haber borrado)
-  const rows: any[] = XLSX.utils.sheet_to_json(sheet, { range: 3, defval: "" });
+  // Leer desde fila 3 (índice 2 = encabezados reales), datos desde fila 4 en adelante
+  const rows: any[] = XLSX.utils.sheet_to_json(sheet, { range: 2, defval: "" });
 
   const creados:  any[] = [];
   const errores:  { fila: number; codigo: string; error: string }[] = [];
   const omitidos: number[] = [];
 
   for (let i = 0; i < rows.length; i++) {
-    const fila  = i + 5; // fila real en Excel (encabezado=3, ejemplo=4, datos=5+)
+    const fila  = i + 4; // fila real en Excel (encabezado=3, datos=4+)
     const row   = rows[i];
 
     // Mapear columnas (nombres del encabezado del Excel)
