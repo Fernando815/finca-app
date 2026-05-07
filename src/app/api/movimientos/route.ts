@@ -19,6 +19,17 @@ export async function POST(req: NextRequest) {
   const potrero = await prisma.potrero.findFirst({ where: { id: potreroId, finca: { userId: session.user.id } } });
   if (!lote || !potrero) return NextResponse.json({ error: "Lote o potrero no encontrado" }, { status: 404 });
 
+  // Verificar que el potrero destino no esté ya ocupado por OTRO lote
+  const potreroOcupado = await prisma.movimientoPotrero.findFirst({
+    where: { potreroId, fechaSalida: null },
+  });
+  if (potreroOcupado && potreroOcupado.loteId !== loteId) {
+    return NextResponse.json(
+      { error: "Este potrero ya está ocupado por otro lote. Debe rotarlo primero." },
+      { status: 409 }
+    );
+  }
+
   // Cerrar movimiento anterior del lote
   const movAnterior = await prisma.movimientoPotrero.findFirst({
     where: { loteId, fechaSalida: null },

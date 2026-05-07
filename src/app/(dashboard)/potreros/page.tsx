@@ -158,8 +158,16 @@ function PotreroCard({ p, fincaId, onMover }: { p: any; fincaId: string; onMover
 
         <div className="flex items-center justify-between text-xs text-gray-400">
           <span>Cap: {p.capacidadAnimales ?? "—"} animales</span>
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onMover(p)}>
-            <ArrowRightLeft className="w-3 h-3 mr-1" /> Mover lote
+          <Button
+            size="sm"
+            variant="outline"
+            className={cn("h-7 text-xs", mov ? "opacity-40 cursor-not-allowed" : "")}
+            onClick={() => !mov && onMover(p)}
+            disabled={!!mov}
+            title={mov ? `Ocupado por ${mov.lote?.nombre} — rote el lote primero` : "Mover un lote a este potrero"}
+          >
+            <ArrowRightLeft className="w-3 h-3 mr-1" />
+            {mov ? "Ocupado" : "Mover lote"}
           </Button>
         </div>
       </div>
