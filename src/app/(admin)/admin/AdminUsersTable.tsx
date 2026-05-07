@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Shield, Crown, MoreVertical, CalendarPlus, Trash2, RefreshCw } from "lucide-react";
+import { Shield, Crown, MoreVertical, CalendarPlus, Trash2, Eye } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 interface User {
   id: string; name: string; email: string; role: string; createdAt: string;
@@ -129,7 +130,13 @@ export function AdminUsersTable({ users: initial, currentUserId }: { users: User
                   </td>
                   <td className="px-4 py-3">
                     {u.id !== currentUserId && (
-                      <DropdownMenu>
+                      <div className="flex items-center gap-1">
+                        <Button asChild variant="ghost" size="icon" className="h-7 w-7" title="Ver fincas y datos">
+                          <Link href={`/admin/usuarios/${u.id}`}>
+                            <Eye className="w-4 h-4 text-stone-400" />
+                          </Link>
+                        </Button>
+                        <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-7 w-7" disabled={loading === u.id}>
                             <MoreVertical className="w-4 h-4 text-stone-400" />
@@ -159,6 +166,7 @@ export function AdminUsersTable({ users: initial, currentUserId }: { users: User
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </div>
                     )}
                   </td>
                 </tr>
