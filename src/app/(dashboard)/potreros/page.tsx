@@ -150,7 +150,28 @@ function PotreroCard({ p, fincaId, onMover }: { p: any; fincaId: string; onMover
         ) : (
           <div className={cn("rounded-xl p-3 mb-3 text-center", enDescanso ? "bg-amber-50 border border-amber-200" : "bg-blue-50")}>
             {enDescanso ? (
-              <p className="text-xs text-amber-700 font-medium">🌿 En descanso · Recuperando pasto</p>
+              <div>
+                <p className="text-xs text-amber-700 font-medium mb-2">🌿 En descanso · Recuperando pasto</p>
+                {p.diasDescansando !== null && (
+                  <>
+                    <div className="flex justify-between text-[10px] text-amber-600 mb-1">
+                      <span>{p.diasDescansando} días descansando</span>
+                      <span>mín {p.diasDescansoMinimo} días</span>
+                    </div>
+                    <div className="w-full bg-amber-200 rounded-full h-1.5">
+                      <div
+                        className="h-1.5 rounded-full bg-amber-500 transition-all"
+                        style={{ width: `${Math.min((p.diasDescansando / p.diasDescansoMinimo) * 100, 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-amber-600 mt-1">
+                      {p.diasDescansando >= p.diasDescansoMinimo
+                        ? "✅ Descanso completo · listo al recargar"
+                        : `Faltan ${p.diasDescansoMinimo - p.diasDescansando} días`}
+                    </p>
+                  </>
+                )}
+              </div>
             ) : (
               <p className="text-xs text-blue-600">✅ Disponible · Listo para recibir lote</p>
             )}

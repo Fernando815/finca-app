@@ -23,19 +23,66 @@ export async function GET(req: NextRequest) {
     orderBy: { numero: "asc" },
   });
 
+  // Auto-recuperar potreros que ya cumplieron su descanso
+  const autoActualizar: Promise<any>[] = [];
+  for (const p of potreros) {
+    if (p.estadoPasto === "DESCANSANDO" && p.movimientos.length === 0) {
+      // Buscar cuándo salió el último lote
+      const ultimoMov = await prisma.movimientoPotrero.findFirst({
+        where: { potreroId: p.id, fechaSalida: { not: null } },
+        orderBy: { fechaSalida: "desc" },
+      });
+      if (ultimoMov?.fechaSalida) {
+        const diasDescansando = Math.floor(
+          (Date.now() - new Date(ultimoMov.fechaSalida).getTime()) / 86400000
+        );
+        if (diasDescansando >= p.diasDescansoMinimo) {
+          autoActualizar.push(
+            prisma.potrero.update({
+              where: { id: p.id },
+              data: { estadoPasto: "EXCELENTE" },
+            })
+          );
+          (p as any).estadoPasto = "EXCELENTE";
+        }
+        (p as any).diasDescansando = diasDescansando;
+      }
+    }
+  }
+  if (autoActualizar.length > 0) await Promise.all(autoActualizar);
+
   // Enriquecer con días actuales y estado de rotación
-  const enriquecidos = potreros.map((p) => {
+  const enriquecidos = await Promise.all(potreros.map(async (p) => {
     const movActual = p.movimientos[0] ?? null;
     const diasActual = movActual
       ? Math.floor((Date.now() - new Date(movActual.fechaEntrada).getTime()) / 86400000)
       : null;
+
+    // Si está descansando, calcular días de descanso
+    let diasDescansando: number | null = null;
+    if ((p as any).estadoPasto === "DESCANSANDO" && !movActual) {
+      diasDescansando = (p as any).diasDescansando ?? null;
+      if (diasDescansando === null) {
+        const ultimoMov = await prisma.movimientoPotrero.findFirst({
+          where: { potreroId: p.id, fechaSalida: { not: null } },
+          orderBy: { fechaSalida: "desc" },
+        });
+        if (ultimoMov?.fechaSalida) {
+          diasDescansando = Math.floor(
+            (Date.now() - new Date(ultimoMov.fechaSalida).getTime()) / 86400000
+          );
+        }
+      }
+    }
+
     return {
       ...p,
       movActual,
       diasActual,
+      diasDescansando,
       necesitaRotacion: diasActual !== null && diasActual >= p.diasOcupacionMaximo,
     };
-  });
+  }));
 
   return NextResponse.json(enriquecidos);
 }
