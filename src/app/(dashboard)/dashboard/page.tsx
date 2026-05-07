@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
+import { getActiveFincaId } from "@/lib/getActiveFinca";
 
 export const dynamic = "force-dynamic";
 async function getDashboardData(userId: string, fincaId: string) {
@@ -124,14 +125,10 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const finca = await prisma.finca.findFirst({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "asc" },
-  });
+  const fincaId = await getActiveFincaId(session.user.id);
+  if (!fincaId) redirect("/setup");
 
-  if (!finca) redirect("/setup");
-
-  const data = await getDashboardData(session.user.id, finca.id);
+  const data = await getDashboardData(session.user.id, fincaId);
 
   return <DashboardClient data={data} />;
 }

@@ -2,15 +2,16 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { LecheClient } from "@/components/leche/LecheClient";
+import { getActiveFincaId } from "@/lib/getActiveFinca";
 
 export default async function LechePage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const finca = await prisma.finca.findFirst({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "asc" },
-  });
+  const fincaId = await getActiveFincaId(session.user.id);
+  if (!fincaId) redirect("/setup");
+
+  const finca = await prisma.finca.findUnique({ where: { id: fincaId } });
   if (!finca) redirect("/setup");
 
   // Cargar animales hembra activos y lotes para los selectores

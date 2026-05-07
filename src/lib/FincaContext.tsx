@@ -27,7 +27,10 @@ export function FincaProvider({ children }: { children: ReactNode }) {
     setFincas(data);
     const saved = typeof window !== "undefined" ? localStorage.getItem("fincaId") : null;
     const valid = saved && data.find(f => f.id === saved);
-    setFincaIdState(prev => prev || (valid ? saved! : data[0].id));
+    const activeId = valid ? saved! : data[0].id;
+    setFincaIdState(prev => prev || activeId);
+    // Sincronizar cookie en carga inicial
+    document.cookie = `finca-id=${activeId}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     setLoading(false);
   }, []);
 
@@ -36,6 +39,8 @@ export function FincaProvider({ children }: { children: ReactNode }) {
   const setFincaId = (id: string) => {
     setFincaIdState(id);
     localStorage.setItem("fincaId", id);
+    // Sincronizar con cookie para que páginas servidor la lean
+    document.cookie = `finca-id=${id}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
   };
 
   const reload = async () => {
