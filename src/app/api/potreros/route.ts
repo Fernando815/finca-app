@@ -17,12 +17,13 @@ async function upsertNotif(userId: string, tipo: string, titulo: string, mensaje
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const userId = session.user.id;
 
   const fincaId = new URL(req.url).searchParams.get("fincaId");
   if (!fincaId) return NextResponse.json({ error: "fincaId requerido" }, { status: 400 });
 
   const potreros = await prisma.potrero.findMany({
-    where: { fincaId, finca: { userId: session.user.id } },
+    where: { fincaId, finca: { userId } },
     include: {
       movimientos: {
         where: { fechaSalida: null },
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
     // Auto-generar notificacion cuando el lote supera el limite de dias
     if (necesitaRotacion && movActual) {
       await upsertNotif(
-        session.user.id,
+        userId,
         "ROTACION",
         "Rotacion pendiente",
         `Lote "${(movActual.lote as any)?.nombre}" lleva ${diasActual} dias en ${p.nombre} - debe rotar`,
