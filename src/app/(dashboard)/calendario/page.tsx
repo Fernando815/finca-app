@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft, ChevronRight, CalendarDays, X,
@@ -8,6 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useFinca } from "@/lib/FincaContext";
 
 // ── Types ─────────────────────────────────────────────────────
 interface Tarea {
@@ -97,14 +98,8 @@ export default function CalendarioPage() {
   const today = new Date();
   const [year, setYear]   = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
-  const [fincaId, setFincaId] = useState("");
+  const { fincaId } = useFinca();
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/fincas").then(r => r.json()).then(d => {
-      if (Array.isArray(d) && d.length > 0) setFincaId(d[0].id);
-    });
-  }, []);
 
   const { data: tareas = [], isLoading: loadingTareas } = useQuery<Tarea[]>({
     queryKey: ["tareas-calendario", fincaId],

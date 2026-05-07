@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Grid3X3, ArrowRightLeft, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,20 +10,15 @@ import { PotreroForm } from "@/components/potreros/PotreroForm";
 import { MovimientoForm } from "@/components/potreros/MovimientoForm";
 import { cn, formatArea, diasEnPotrero } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import { useFinca } from "@/lib/FincaContext";
 import Link from "next/link";
 
 export default function PotrerosPage() {
   const [modalNuevo, setModalNuevo] = useState(false);
   const [modalMover, setModalMover] = useState<any>(null);
-  const [fincaId, setFincaId] = useState("");
+  const { fincaId } = useFinca();
   const { toast } = useToast();
   const qc = useQueryClient();
-
-  useEffect(() => {
-    fetch("/api/fincas").then(r => r.json()).then(d => {
-      if (Array.isArray(d) && d.length > 0) setFincaId(d[0].id);
-    });
-  }, []);
 
   const { data: potreros = [], isLoading } = useQuery({
     queryKey: ["potreros", fincaId],

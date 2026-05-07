@@ -13,6 +13,7 @@ import {
   CalendarDays, Briefcase, DollarSign, UserX, Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFinca } from "@/lib/FincaContext";
 
 const CARGO_LABELS: Record<string, string> = {
   PEON:      "Peón",
@@ -47,7 +48,7 @@ const EMPTY: any = {
 
 export default function PeonesPage() {
   const { toast } = useToast();
-  const [fincaId, setFincaId]   = useState("");
+  const { fincaId } = useFinca();
   const [peones,  setPeones]    = useState<any[]>([]);
   const [search,  setSearch]    = useState("");
   const [filtro,  setFiltro]    = useState("TODOS");
@@ -55,14 +56,6 @@ export default function PeonesPage() {
   const [form,    setForm]      = useState<any>(EMPTY);
   const [saving,  setSaving]    = useState(false);
   const [selected, setSelected] = useState<any>(null);
-
-  useEffect(() => {
-    fetch("/api/fincas").then(r => r.json()).then(d => {
-      if (Array.isArray(d) && d.length > 0) {
-        setFincaId(d[0].id);
-      }
-    });
-  }, []);
 
   useEffect(() => {
     if (!fincaId) return;

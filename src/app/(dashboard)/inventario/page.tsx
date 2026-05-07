@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Wrench, Tractor, Zap, Hammer, Fuel, Droplets,
@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/components/ui/use-toast";
 import { cn, formatFecha } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { useFinca } from "@/lib/FincaContext";
 
 // ── Constants ────────────────────────────────────────────────
 const CATEGORIAS = [
@@ -67,7 +68,7 @@ function stockBajo(item: Item) {
 
 // ── Page ──────────────────────────────────────────────────────
 export default function InventarioPage() {
-  const [fincaId, setFincaId] = useState("");
+  const { fincaId } = useFinca();
   const [filtroCategoria, setFiltroCategoria] = useState("TODAS");
   const [busqueda, setBusqueda] = useState("");
   const [modalItem, setModalItem] = useState<Item | null | "nuevo">(null);
@@ -75,12 +76,6 @@ export default function InventarioPage() {
   const [modalMant, setModalMant] = useState<Item | null>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
-
-  useEffect(() => {
-    fetch("/api/fincas").then(r => r.json()).then(d => {
-      if (Array.isArray(d) && d.length > 0) setFincaId(d[0].id);
-    });
-  }, []);
 
   // ── Queries ──
   const { data: items = [], isLoading } = useQuery<Item[]>({

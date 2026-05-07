@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, CheckSquare, Clock, Check, Trash2, UserCheck, Pencil, Calendar, Tag, AlertTriangle, FileText } from "lucide-react";import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { TareaForm } from "@/components/tareas/TareaForm";
 import { cn, getPrioridadColor, formatFecha } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import { useFinca } from "@/lib/FincaContext";
 
 const ESTADO_COLOR: Record<string, string> = {
   PENDIENTE:  "bg-yellow-100 text-yellow-800",
@@ -28,7 +29,7 @@ export default function TareasPage() {
   const searchParams = useSearchParams();
   const [modalNueva, setModalNueva] = useState(searchParams.get("nuevo") === "1");
   const [filtroEstado, setFiltroEstado] = useState("ACTIVAS");
-  const [fincaId, setFincaId] = useState("");
+  const { fincaId } = useFinca();
   const [tareaEditando, setTareaEditando] = useState<any>(null);
   const [tareaDetalle, setTareaDetalle] = useState<any>(null);
   // completandose: taskId → timestamp when it was completed (shown for 10 min)
@@ -36,12 +37,6 @@ export default function TareasPage() {
   const timersRef = React.useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const { toast } = useToast();
   const qc = useQueryClient();
-
-  useEffect(() => {
-    fetch("/api/fincas").then(r => r.json()).then(data => {
-      if (Array.isArray(data) && data.length > 0) setFincaId(data[0].id);
-    });
-  }, []);
 
   const { data: tareas = [], isLoading } = useQuery({
     queryKey: ["tareas", fincaId, filtroEstado],

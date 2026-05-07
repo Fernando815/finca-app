@@ -14,6 +14,7 @@ import { CultivoForm } from "@/components/cultivos/CultivoForm";
 import { LaborForm } from "@/components/cultivos/LaborForm";
 import { ParcelaForm } from "@/components/cultivos/ParcelaForm";
 import { useToast } from "@/components/ui/use-toast";
+import { useFinca } from "@/lib/FincaContext";
 import { cn } from "@/lib/utils";
 
 type Tab = "cultivos" | "parcelas";
@@ -23,30 +24,17 @@ export default function CultivosPage() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const { toast } = useToast();
+  const { fincaId } = useFinca();
 
   const [tab, setTab]           = useState<Tab>("cultivos");
   const [cultivos, setCultivos] = useState<any[]>([]);
   const [parcelas, setParcelas] = useState<any[]>([]);
-  const [fincaId, setFincaId]   = useState<string>("");
-  const [fincas, setFincas]     = useState<any[]>([]);
   const [loading, setLoading]   = useState(true);
   const [saving, setSaving]     = useState(false);
   const [dialog, setDialog]     = useState<Dialog>(searchParams.get("nuevo") === "1" ? "cultivo" : null);
   const [selected, setSelected] = useState<any>(null);// cultivo seleccionado para labor/edit
   const [search, setSearch]     = useState("");
   const [filterEtapa, setFilterEtapa] = useState("TODOS");
-
-  // Load fincas first
-  useEffect(() => {
-    fetch("/api/fincas")
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          setFincas(data);
-          setFincaId(data[0].id);
-        }
-      });
-  }, []);
 
   const loadData = useCallback(() => {
     if (!fincaId) return;

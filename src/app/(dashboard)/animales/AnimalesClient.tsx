@@ -15,6 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { useFinca } from "@/lib/FincaContext";
 
 type ImportResult = { creados: number; errores: { fila: number; codigo: string; error: string }[]; omitidos: number; total: number } | null;
 
@@ -27,7 +28,7 @@ export default function AnimalesPage() {
   const [search, setSearch] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
   const [filtroLote, setFiltroLote] = useState("TODOS");
-  const [fincaId, setFincaId] = useState("");
+  const { fincaId } = useFinca();
   const [lotes, setLotes] = useState<any[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importando, setImportando] = useState(false);
@@ -37,16 +38,16 @@ export default function AnimalesPage() {
   const qc = useQueryClient();
 
   useEffect(() => {
-    fetch("/api/fincas").then(r => r.json()).then(data => {
-      if (Array.isArray(data) && data.length > 0) {
-        const id = data[0].id;
-        setFincaId(id);
-        fetch(`/api/lotes?fincaId=${id}`).then(r => r.json()).then(d => {
-          if (Array.isArray(d)) setLotes(d);
-        });
-      }
+    if (!fincaId) {
+      setLotes([]);
+      setFiltroLote("TODOS");
+      return;
+    }
+    setFiltroLote("TODOS");
+    fetch(`/api/lotes?fincaId=${fincaId}`).then(r => r.json()).then(d => {
+      if (Array.isArray(d)) setLotes(d);
     });
-  }, []);
+  }, [fincaId]);
 
   const { data: animales = [], isLoading } = useQuery({
     queryKey: ["animales", fincaId, filtroEstado, filtroLote, search],

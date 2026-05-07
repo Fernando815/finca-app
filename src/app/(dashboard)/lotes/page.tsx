@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { useFinca } from "@/lib/FincaContext";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -121,18 +122,12 @@ function LoteForm({ fincaId, defaultValues, onSubmit, loading, onCancel, isEdit 
 
 export default function LotesPage() {
   const { toast } = useToast();
+  const { fincaId } = useFinca();
   const [lotes, setLotes] = useState<any[]>([]);
-  const [fincaId, setFincaId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dialog, setDialog] = useState<"nuevo" | "editar" | null>(null);
   const [selected, setSelected] = useState<any>(null);
-
-  useEffect(() => {
-    fetch("/api/fincas").then(r => r.json()).then(d => {
-      if (Array.isArray(d) && d.length > 0) setFincaId(d[0].id);
-    });
-  }, []);
 
   const loadLotes = useCallback(() => {
     if (!fincaId) return;
