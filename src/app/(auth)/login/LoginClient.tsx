@@ -35,7 +35,12 @@ export default function LoginPage() {
       toast({ title: "Error al iniciar sesión", description: "Correo o contraseña incorrectos.", variant: "destructive" });
       return;
     }
-    router.push(params.get("callbackUrl") ?? "/dashboard");
+    // Verificar rol para redirigir correctamente
+    const sessionRes = await fetch("/api/auth/session");
+    const session = await sessionRes.json();
+    const role = (session?.user as any)?.role;
+    const callbackUrl = params.get("callbackUrl");
+    router.push(callbackUrl ?? (role === "ADMIN" ? "/admin" : "/dashboard"));
   };
 
   return (
