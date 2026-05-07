@@ -27,6 +27,7 @@ export default async function AdminUsuarioPage({ params }: { params: { userId: s
               tareas: true,
               peones: true,
               inventario: true,
+              cultivos: true,
             },
           },
         },
@@ -42,7 +43,7 @@ export default async function AdminUsuarioPage({ params }: { params: { userId: s
     (usuario.fincas as any[]).map(async (f: any) => {
       const [animalesEnfermos, tareasVencidas, animalesRecientes] = await Promise.all([
         prisma.animal.count({ where: { fincaId: f.id, estado: { in: ["ENFERMO", "EN_TRATAMIENTO"] } } }),
-        prisma.tarea.count({ where: { fincaId: f.id, estado: "PENDIENTE", fechaVencimiento: { lt: new Date() } } } as any),
+        prisma.tarea.count({ where: { fincaId: f.id, estado: "VENCIDA" } }),
         prisma.animal.findMany({ where: { fincaId: f.id }, orderBy: { createdAt: "desc" }, take: 5, select: { codigo: true, nombre: true, tipo: true, estado: true } }),
       ]);
       return { ...f, animalesEnfermos, tareasVencidas, animalesRecientes };
