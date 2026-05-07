@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Filter, Beef, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Beef, Pencil, Trash2, Download, Upload, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AnimalCard } from "@/components/animales/AnimalCard";
@@ -16,9 +16,11 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 
+type ImportResult = { creados: number; errores: { fila: number; codigo: string; error: string }[]; omitidos: number; total: number } | null;
+
 export default function AnimalesPage() {
   const searchParams = useSearchParams();
-  const [dialog, setDialog] = useState<"crear" | "editar" | null>(
+  const [dialog, setDialog] = useState<"crear" | "editar" | "importar" | null>(
     searchParams.get("nuevo") === "1" ? "crear" : null
   );
   const [selected, setSelected] = useState<any>(null);
@@ -27,6 +29,10 @@ export default function AnimalesPage() {
   const [filtroLote, setFiltroLote] = useState("TODOS");
   const [fincaId, setFincaId] = useState("");
   const [lotes, setLotes] = useState<any[]>([]);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importando, setImportando] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -98,6 +104,29 @@ export default function AnimalesPage() {
     preñadas:    animales.filter((a: any) => a.estado === "PRENADA").length,
   };
 
+  async function handleImportar() {
+    if (!importFile || !fincaId) return;
+    setImportando(true);
+    setImportResult(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", importFile);
+      fd.append("fincaId", fincaId);
+      const res = await fetch("/api/animales/importar", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setImportResult(data);
+      if (data.creados > 0) {
+        qc.invalidateQueries({ queryKey: ["animales"] });
+        toast({ title: `✅ ${data.creados} animales importados correctamente` });
+      }
+    } catch (e: any) {
+      toast({ title: "Error al importar", description: e.message, variant: "destructive" });
+    } finally {
+      setImportando(false);
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -105,9 +134,20 @@ export default function AnimalesPage() {
           <h2 className="text-2xl font-bold text-gray-900">Animales</h2>
           <p className="text-gray-500 text-sm">{conteos.total} animales registrados</p>
         </div>
-        <Button onClick={() => { setSelected(null); setDialog("crear"); }} className="bg-finca-green-600 hover:bg-finca-green-700">
-          <Plus className="w-4 h-4 mr-2" /> Registrar animal
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <a href="/plantilla-importacion-animales.xlsx" download>
+            <Button variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
+              <Download className="w-4 h-4 mr-2" /> Descargar plantilla
+            </Button>
+          </a>
+          <Button variant="outline" className="border-blue-600 text-blue-700 hover:bg-blue-50"
+            onClick={() => { setImportFile(null); setImportResult(null); setDialog("importar"); }}>
+            <Upload className="w-4 h-4 mr-2" /> Importar Excel
+          </Button>
+          <Button onClick={() => { setSelected(null); setDialog("crear"); }} className="bg-finca-green-600 hover:bg-finca-green-700">
+            <Plus className="w-4 h-4 mr-2" /> Registrar animal
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -202,6 +242,95 @@ export default function AnimalesPage() {
             <AnimalForm fincaId={fincaId} defaultValues={selected} onSubmit={editMutation.mutate}
               loading={editMutation.isPending} onCancel={() => { setDialog(null); setSelected(null); }} />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal importar */}
+      <Dialog open={dialog === "importar"} onOpenChange={o => { if (!o) { setDialog(null); setImportFile(null); setImportResult(null); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>📤 Importar animales desde Excel</DialogTitle>
+            <p className="text-sm text-gray-500 mt-1">
+              Use la plantilla oficial para evitar errores. Los animales con código duplicado serán omitidos.
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Descarga de plantilla */}
+            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+              <Download className="w-5 h-5 text-green-700 shrink-0" />
+              <div className="flex-1 text-sm text-green-800">
+                <p className="font-medium">¿No tiene la plantilla?</p>
+                <p className="text-xs text-green-600">Descárguela, llénela y súbala aquí</p>
+              </div>
+              <a href="/plantilla-importacion-animales.xlsx" download>
+                <Button size="sm" variant="outline" className="border-green-600 text-green-700 text-xs">
+                  Descargar
+                </Button>
+              </a>
+            </div>
+
+            {/* Selector de archivo */}
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              {importFile ? (
+                <div>
+                  <p className="font-medium text-blue-700 text-sm">{importFile.name}</p>
+                  <p className="text-xs text-gray-400">{(importFile.size / 1024).toFixed(1)} KB — click para cambiar</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Click para seleccionar archivo</p>
+                  <p className="text-xs text-gray-400 mt-1">Solo archivos .xlsx</p>
+                </div>
+              )}
+              <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) { setImportFile(f); setImportResult(null); } }} />
+            </div>
+
+            {/* Resultados */}
+            {importResult && (
+              <div className="rounded-lg border p-4 space-y-2 bg-gray-50">
+                <div className="flex gap-4 text-sm font-medium">
+                  <span className="flex items-center gap-1 text-green-700">
+                    <CheckCircle2 className="w-4 h-4" /> {importResult.creados} creados
+                  </span>
+                  {importResult.errores.length > 0 && (
+                    <span className="flex items-center gap-1 text-red-600">
+                      <XCircle className="w-4 h-4" /> {importResult.errores.length} con error
+                    </span>
+                  )}
+                  {importResult.omitidos > 0 && (
+                    <span className="text-gray-500">({importResult.omitidos} filas vacías)</span>
+                  )}
+                </div>
+                {importResult.errores.length > 0 && (
+                  <div className="max-h-36 overflow-y-auto space-y-1">
+                    {importResult.errores.map((e, i) => (
+                      <div key={i} className="text-xs bg-red-50 border border-red-100 rounded px-2 py-1">
+                        <span className="font-medium text-red-700">Fila {e.fila} [{e.codigo}]:</span> {e.error}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => { setDialog(null); setImportFile(null); setImportResult(null); }}>
+                {importResult ? "Cerrar" : "Cancelar"}
+              </Button>
+              {!importResult && (
+                <Button disabled={!importFile || importando} onClick={handleImportar}
+                  className="bg-blue-600 hover:bg-blue-700">
+                  {importando ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Importando...</> : <><Upload className="w-4 h-4 mr-2" /> Importar</>}
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
