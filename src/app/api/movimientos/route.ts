@@ -30,22 +30,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Cerrar movimiento anterior del lote
-  const movAnterior = await prisma.movimientoPotrero.findFirst({
+  // Cerrar TODOS los movimientos activos del lote (puede haber varios por datos de prueba)
+  const movsActivos = await prisma.movimientoPotrero.findMany({
     where: { loteId, fechaSalida: null },
-    orderBy: { fechaEntrada: "desc" },
   });
 
-  if (movAnterior) {
-    const diasEnPotrero = Math.floor(
-      (new Date(fechaEntrada).getTime() - new Date(movAnterior.fechaEntrada).getTime()) / 86400000
-    );
-    await prisma.movimientoPotrero.update({
-      where: { id: movAnterior.id },
-      data: { fechaSalida: new Date(fechaEntrada), diasEnPotrero },
-    });
-    // Marcar potrero anterior como disponible
-    await prisma.potrero.update({ where: { id: movAnterior.potreroId }, data: { disponible: true } });
+  if (movsActivos.length > 0) {
+    const fechaSalida = new Date(fechaEntrada);
+    for (const mov of movsActivos) {
+      const diasEnPotrero = Math.floor(
+        (fechaSalida.getTime() - new Date(mov.fechaEntrada).getTime()) / 86400000
+      );
+      await prisma.movimientoPotrero.update({
+        where: { id: mov.id },
+        data: { fechaSalida, diasEnPotrero },
+      });
+      // Marcar cada potrero anterior como disponible
+      if (mov.potreroId !== potreroId) {
+        await prisma.potrero.update({ where: { id: mov.potreroId }, data: { disponible: true } });
+      }
+    }
   }
 
   // Crear nuevo movimiento
