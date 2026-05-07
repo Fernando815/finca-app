@@ -2,12 +2,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Menu, Bell, ChevronDown, LogOut, User, Settings, Check, CheckCheck, Loader2, MapPin } from "lucide-react";
+import { Menu, Bell, ChevronDown, LogOut, User, Settings, Check, CheckCheck, Loader2, MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useFinca } from "@/lib/FincaContext";
@@ -52,7 +54,32 @@ export function Navbar({ onMenuClick, titulo }: NavbarProps) {
   const router = useRouter();
   const user = session?.user;
   const initials = user?.name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) ?? "U";
-  const { fincas, fincaId, finca, setFincaId } = useFinca();
+  const { fincas, fincaId, finca, setFincaId, reload } = useFinca();
+  const [nuevaFincaOpen, setNuevaFincaOpen] = useState(false);
+  const [nuevaFincaNombre, setNuevaFincaNombre] = useState("");
+  const [creandoFinca, setCreandoFinca] = useState(false);
+
+  async function crearFinca() {
+    if (!nuevaFincaNombre.trim()) return;
+    setCreandoFinca(true);
+    try {
+      const res = await fetch("/api/fincas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: nuevaFincaNombre.trim() }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const nueva = await res.json();
+      await reload();
+      setFincaId(nueva.id);
+      setNuevaFincaOpen(false);
+      setNuevaFincaNombre("");
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setCreandoFinca(false);
+    }
+  }
 
   const [notifOpen, setNotifOpen]       = useState(false);
   const [notifs, setNotifs]             = useState<any[]>([]);
@@ -138,35 +165,72 @@ export function Navbar({ onMenuClick, titulo }: NavbarProps) {
       </div>
 
       {/* Finca selector - center */}
-      {fincas.length > 1 && (
-        <div className="flex items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs border-finca-green-200 text-finca-green-700 hover:bg-finca-green-50 gap-1.5 max-w-48">
-                <MapPin className="w-3 h-3 shrink-0" />
-                <span className="truncate">{finca?.nombre ?? "Seleccionar finca"}</span>
-                <ChevronDown className="w-3 h-3 shrink-0 opacity-60" />
+      <div className="flex items-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs border-finca-green-200 text-finca-green-700 hover:bg-finca-green-50 gap-1.5 max-w-52">
+              <MapPin className="w-3 h-3 shrink-0" />
+              <span className="truncate">{finca?.nombre ?? "Sin finca"}</span>
+              <ChevronDown className="w-3 h-3 shrink-0 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="w-60 rounded-2xl border-stone-100 shadow-modal p-1.5">
+            <div className="px-3 py-1.5 mb-1">
+              <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Mis fincas</p>
+            </div>
+            {fincas.map(f => (
+              <DropdownMenuItem
+                key={f.id}
+                className="rounded-xl text-xs cursor-pointer gap-2"
+                onClick={() => setFincaId(f.id)}
+              >
+                <MapPin className="w-3 h-3 text-finca-green-500 shrink-0" />
+                <span className="flex-1 truncate">{f.nombre}</span>
+                {f.id === fincaId && <Check className="w-3 h-3 text-finca-green-600" />}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator className="bg-stone-100 my-1" />
+            <DropdownMenuItem
+              className="rounded-xl text-xs cursor-pointer gap-2 text-finca-green-700 font-medium"
+              onClick={() => setNuevaFincaOpen(true)}
+            >
+              <Plus className="w-3 h-3 shrink-0" />
+              Nueva finca
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Dialog nueva finca */}
+      <Dialog open={nuevaFincaOpen} onOpenChange={o => { if (!o) { setNuevaFincaOpen(false); setNuevaFincaNombre(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>🌿 Nueva finca</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-stone-700">Nombre de la finca *</label>
+              <Input
+                placeholder="Ej: Finca El Progreso"
+                value={nuevaFincaNombre}
+                onChange={e => setNuevaFincaNombre(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && crearFinca()}
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setNuevaFincaOpen(false)}>Cancelar</Button>
+              <Button
+                onClick={crearFinca}
+                disabled={!nuevaFincaNombre.trim() || creandoFinca}
+                className="bg-finca-green-600 hover:bg-finca-green-700"
+              >
+                {creandoFinca ? <Loader2 className="w-4 h-4 animate-spin" /> : "Crear finca"}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-56 rounded-2xl border-stone-100 shadow-modal p-1.5">
-              <div className="px-3 py-1.5 mb-1">
-                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Mis fincas</p>
-              </div>
-              {fincas.map(f => (
-                <DropdownMenuItem
-                  key={f.id}
-                  className="rounded-xl text-xs cursor-pointer gap-2"
-                  onClick={() => setFincaId(f.id)}
-                >
-                  <MapPin className="w-3 h-3 text-finca-green-500 shrink-0" />
-                  <span className="flex-1 truncate">{f.nombre}</span>
-                  {f.id === fincaId && <Check className="w-3 h-3 text-finca-green-600" />}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Right */}
       <div className="flex items-center gap-1.5">
