@@ -16,7 +16,7 @@ async function getDashboardData(userId: string, fincaId: string) {
     animalesPorTipo, tareasPorEstado, lecheUltimos7, potreros,
   ] = await Promise.all([
     prisma.finca.findFirst({ where: { userId, id: fincaId } }),
-    prisma.animal.count({ where: { fincaId, estado: "ACTIVO" } }),
+    prisma.animal.count({ where: { fincaId, estado: { notIn: ["VENDIDO", "MUERTO"] } } }),
     prisma.animal.count({ where: { fincaId, estado: "ENFERMO" } }),
     prisma.animal.count({ where: { fincaId, estado: "EN_TRATAMIENTO" } }),
     prisma.tarea.findMany({
@@ -58,7 +58,7 @@ async function getDashboardData(userId: string, fincaId: string) {
     // Datos para gráficas
     prisma.animal.groupBy({
       by: ["tipo"],
-      where: { fincaId },
+      where: { fincaId, estado: { notIn: ["VENDIDO", "MUERTO"] } },
       _count: { _all: true },
       orderBy: { _count: { tipo: "desc" } },
     }),

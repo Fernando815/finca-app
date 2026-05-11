@@ -8,21 +8,30 @@ export async function GET(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const fincaId = searchParams.get("fincaId");
-  const estado   = searchParams.get("estado");
-  const tipo     = searchParams.get("tipo");
-  const loteId   = searchParams.get("loteId");
-  const q        = searchParams.get("q");
+  const fincaId       = searchParams.get("fincaId");
+  const estado        = searchParams.get("estado");
+  const tipo          = searchParams.get("tipo");
+  const loteId        = searchParams.get("loteId");
+  const q             = searchParams.get("q");
+  // "historico=true" muestra también animales vendidos/muertos
+  const historico     = searchParams.get("historico") === "true";
 
   if (!fincaId) return NextResponse.json({ error: "fincaId requerido" }, { status: 400 });
 
   const finca = await prisma.finca.findFirst({ where: { id: fincaId, userId: session.user.id } });
   if (!finca) return NextResponse.json({ error: "Finca no encontrada" }, { status: 404 });
 
+  // Por defecto excluir VENDIDO y MUERTO (ya no están en la finca)
+  const estadoFilter = estado
+    ? { estado: estado as any }
+    : historico
+      ? {}
+      : { estado: { notIn: ["VENDIDO", "MUERTO"] } };
+
   const animales = await prisma.animal.findMany({
     where: {
       fincaId,
-      ...(estado ? { estado: estado as any } : {}),
+      ...estadoFilter,
       ...(tipo   ? { tipo:   tipo as any   } : {}),
       ...(loteId ? { loteId }               : {}),
       ...(q ? { OR: [

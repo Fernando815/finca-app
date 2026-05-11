@@ -53,7 +53,11 @@ export default function AnimalesPage() {
     queryKey: ["animales", fincaId, filtroEstado, filtroLote, search],
     queryFn: async () => {
       const params = new URLSearchParams({ fincaId });
-      if (filtroEstado !== "TODOS") params.set("estado", filtroEstado);
+      if (filtroEstado === "HISTORICO") {
+        params.set("historico", "true");
+      } else if (filtroEstado !== "TODOS") {
+        params.set("estado", filtroEstado);
+      }
       if (filtroLote  !== "TODOS") params.set("loteId", filtroLote);
       if (search) params.set("q", search);
       const res = await fetch(`/api/animales?${params}`);
@@ -176,10 +180,11 @@ export default function AnimalesPage() {
             <Filter className="w-4 h-4 mr-2" /><SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="TODOS">Todos los estados</SelectItem>
-            {["ACTIVO","ENFERMO","EN_TRATAMIENTO","PRENADA","EN_CELO","SECO","VENDIDO","MUERTO"].map(e => (
+            <SelectItem value="TODOS">En finca (todos)</SelectItem>
+            {["ACTIVO","ENFERMO","EN_TRATAMIENTO","PRENADA","EN_CELO","SECO"].map(e => (
               <SelectItem key={e} value={e}>{e.replace(/_/g, " ")}</SelectItem>
             ))}
+            <SelectItem value="HISTORICO">🗂 Histórico (vendidos/muertos)</SelectItem>
           </SelectContent>
         </Select>
         {lotes.length > 0 && (
